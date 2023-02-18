@@ -98,7 +98,7 @@ function AuthForm() {
           <input
             type='password'
             id='password'
-            minlength='7'
+            minLength='7'
             required
             value={password}
             onChange={(e) => setPassword(e.target.value)}
