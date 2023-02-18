@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { useRouter } from 'next/router';
+import { signIn } from 'next-auth/client';
 import FormError from '../ui/form-error';
 import classes from './auth-form.module.css';
 
@@ -7,6 +9,8 @@ function AuthForm() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [errorMessage, setErrorMessage] = useState(false);
+
+  const router = useRouter();
 
   function switchAuthModeHandler() {
     setIsLogin((prevState) => !prevState);
@@ -40,7 +44,17 @@ function AuthForm() {
     setErrorMessage();
 
     if (isLogin) {
-      //login User
+      const result = await signIn('credentials', {
+        redirect: false,
+        email,
+        password,
+      });
+
+      if (!result.error) {
+        router.replace('/profile');
+      } else {
+        setErrorMessage(result.error);
+      }
     } else {
       try {
         const data = await createUser(email, password);
@@ -75,6 +89,7 @@ function AuthForm() {
             onChange={(e) => setPassword(e.target.value)}
           />
         </div>
+        {/* {session && <h1>Signed in!!!!</h1>} */}
         {errorMessage && <FormError errorMessage={errorMessage} />}
         <div className={classes.actions}>
           <button>{isLogin ? 'Login' : 'Create Account'}</button>
