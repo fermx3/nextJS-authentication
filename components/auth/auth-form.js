@@ -1,14 +1,19 @@
 import { useState } from 'react';
 import { useRouter } from 'next/router';
 import { signIn } from 'next-auth/client';
-import FormError from '../ui/form-error';
+import FormMessage from '../ui/form-message';
+import SubmitButton from '../ui/SubmitButton';
+
 import classes from './auth-form.module.css';
+import LoadingSpinner from '../ui/LoadingSpinner';
 
 function AuthForm() {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [errorMessage, setErrorMessage] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState();
+  const [successMessage, setSuccessMessage] = useState();
 
   const router = useRouter();
 
@@ -41,7 +46,9 @@ function AuthForm() {
 
   const submitHandler = async (e) => {
     e.preventDefault();
+    setIsLoading(true);
     setErrorMessage();
+    setSuccessMessage();
 
     if (isLogin) {
       const result = await signIn('credentials', {
@@ -54,13 +61,20 @@ function AuthForm() {
         router.replace('/profile');
       } else {
         setErrorMessage(result.error);
+        setIsLoading(false);
       }
     } else {
       try {
         const data = await createUser(email, password);
-        console.log(data);
+        setSuccessMessage(data.message);
+        setIsLoading(false);
+        setTimeout(() => {
+          setIsLogin(true);
+          setSuccessMessage();
+        }, 3000);
       } catch (error) {
-        console.log(error);
+        setErrorMessage(error.message);
+        setIsLoading(false);
       }
     }
   };
@@ -84,22 +98,28 @@ function AuthForm() {
           <input
             type='password'
             id='password'
+            minlength='7'
             required
             value={password}
             onChange={(e) => setPassword(e.target.value)}
           />
         </div>
-        {/* {session && <h1>Signed in!!!!</h1>} */}
-        {errorMessage && <FormError errorMessage={errorMessage} />}
+        {errorMessage && <FormMessage errorMessage={errorMessage} />}
+        {successMessage && <FormMessage successMessage={successMessage} />}
         <div className={classes.actions}>
-          <button>{isLogin ? 'Login' : 'Create Account'}</button>
-          <button
-            type='button'
-            className={classes.toggle}
-            onClick={switchAuthModeHandler}
-          >
-            {isLogin ? 'Create new account' : 'Login with existing account'}
-          </button>
+          <SubmitButton light isLoading={isLoading}>
+            {isLogin ? 'Login' : 'Create Account'}
+          </SubmitButton>
+          {isLoading && <LoadingSpinner light />}
+          {!isLoading && (
+            <button
+              type='button'
+              className={classes.toggle}
+              onClick={switchAuthModeHandler}
+            >
+              {isLogin ? 'Create new account' : 'Login with existing account'}
+            </button>
+          )}
         </div>
       </form>
     </section>
